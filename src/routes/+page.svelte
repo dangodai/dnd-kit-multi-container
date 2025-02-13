@@ -29,29 +29,33 @@
 	) {
 		newPosition = newPosition ?? board.sections[newSectionIndex].tickets.length;
 
-		const movedItem = board.sections[currentSectionIndex].tickets.splice(currentPosition, 1).pop();
+		const movedItem = board.sections[currentSectionIndex].tickets.splice(currentPosition, 1).pop()!;
 
-		board.sections[newSectionIndex].tickets.splice(newPosition, 0, movedItem!);
+        console.log(`Moving ticket id=${movedItem.id} from [${currentSectionIndex},${currentPosition}] to [${newSectionIndex},${newPosition}]`);
+
+		board.sections[newSectionIndex].tickets.splice(newPosition, 0, movedItem);
 	}
 
 	function findTicketInBoardById(
 		id: number | null
-	): { sectionIndex: number; ticketIndex: number, ticket: { id: number, title: string } } | undefined {
+	):
+		| { sectionIndex: number; ticketIndex: number; ticket: { id: number; title: string } }
+		| undefined {
 		for (let [sectionIndex, section] of board.sections.entries()) {
 			for (let [ticketIndex, ticket] of section.tickets.entries()) {
 				if (ticket.id == id) {
 					return {
 						sectionIndex,
 						ticketIndex,
-                        ticket
+						ticket
 					};
 				}
 			}
 		}
 	}
 
-    let activeId: UniqueIdentifier | undefined = $state();
-    let activeTicket = $derived(findTicketInBoardById(activeId as number)?.ticket);
+	let activeId: UniqueIdentifier | undefined = $state();
+	let activeTicket = $derived(findTicketInBoardById(activeId as number)?.ticket);
 
 	function handleDragStart({ active }: DragStartEvent) {
 		activeId = active.id;
@@ -68,8 +72,10 @@
 
 		const activeTicketInfo = findTicketInBoardById(active.id as number)!;
 
-		if ((over.id.toString()).startsWith('section-')) {
-            const sectionIndex = board.sections.findIndex(s => s.id == parseInt((over.id as string).substring(8)));
+		if (over.id.toString().startsWith('section-')) {
+			const sectionIndex = board.sections.findIndex(
+				(s) => s.id == parseInt((over.id as string).substring(8))
+			);
 
 			arrayMove2d(activeTicketInfo.sectionIndex, activeTicketInfo.ticketIndex, sectionIndex);
 		} else {
@@ -84,7 +90,7 @@
 		}
 	}
 
-    const dropAnimation: DropAnimation = {
+	const dropAnimation: DropAnimation = {
 		sideEffects: defaultDropAnimationSideEffects({
 			styles: {
 				active: {
@@ -129,7 +135,7 @@
 				</SortableContext>
 			{/each}
 		</div>
-        <DragOverlay {dropAnimation} className="shadow-2xl shadow-black">
+		<DragOverlay {dropAnimation} className="shadow-2xl shadow-black">
 			{#if activeTicket}
 				<Sortable ticket={activeTicket} id="DragOverlay-{activeId}" />
 			{/if}
