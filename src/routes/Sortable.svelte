@@ -35,7 +35,7 @@
 	<div
 		class={[
 			'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 hover:ring-2 ring-primary transition',
-			`h-${ticket.height ? '[' + ticket.height + 'px]' : '40'}`,
+			ticket.height ? `h-[${ticket.height}px]` : 'h-40',
 			{ invisible: isDragging.current },
 		]}
 	>
@@ -53,8 +53,7 @@
 			<!-- You can put any content here for the dragging state -->
 			<div
 				class={[
-					'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 border-primary border-dashed border-1 w-full opacity-40',
-					`h-${ticket.height ? '[' + ticket.height + 'px]' : '40'}`
+					'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 border-primary border-dashed border-1 h-full w-full opacity-40',
 				]}
 			>
 				<div class="badge badge-primary tabular-nums">#{ticket.id}</div>
