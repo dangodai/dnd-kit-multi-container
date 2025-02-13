@@ -3,7 +3,7 @@
 	import { useSortable, type UseSortableArguments } from '@dnd-kit-svelte/sortable';
 
 	interface SortableProps extends UseSortableArguments {
-		ticket: { id: number, title: string }
+		ticket: { id: number, title: string, height?: number }
 	}
 
 	let { ticket, ...restProps }: SortableProps = $props();
@@ -16,7 +16,7 @@
 
 	const style = $derived(
 		styleObjectToString({
-			transform: CSS.Transform.toString(transform.current),
+			transform: CSS.Translate.toString(transform.current),
 			transition: isSorting.current ? transition.current : undefined,
 			zIndex: isDragging.current ? 1 : undefined
 		})
@@ -34,8 +34,9 @@
 	{JSON.stringify(rest.data.current.foo)}
 	<div
 		class={[
-			'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 hover:ring-2 ring-primary transition h-40',
-			{ invisible: isDragging.current }
+			'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 hover:ring-2 ring-primary transition',
+			`h-${ticket.height ? '[' + ticket.height + 'px]' : '40'}`,
+			{ invisible: isDragging.current },
 		]}
 	>
 		<div>
@@ -52,7 +53,8 @@
 			<!-- You can put any content here for the dragging state -->
 			<div
 				class={[
-					'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 border-primary border-dashed border-1 h-40 w-full opacity-40',
+					'flex flex-col group shadow rounded-box bg-base-300 p-2 gap-2 border-primary border-dashed border-1 w-full opacity-40',
+					`h-${ticket.height ? '[' + ticket.height + 'px]' : '40'}`
 				]}
 			>
 				<div class="badge badge-primary tabular-nums">#{ticket.id}</div>

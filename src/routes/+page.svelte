@@ -1,6 +1,5 @@
 <script lang="ts">
 	import {
-		closestCorners,
 		defaultDropAnimationSideEffects,
 		DndContext,
 		DragOverlay,
@@ -10,11 +9,11 @@
 		type DropAnimation,
 		type UniqueIdentifier
 	} from '@dnd-kit-svelte/core';
-	import { SortableContext, verticalListSortingStrategy } from '@dnd-kit-svelte/sortable';
-	import type { PageData } from './$types';
 	import Droppable from './Droppable.svelte';
-	import { crossfade } from 'svelte/transition';
 	import Sortable from './Sortable.svelte';
+	import type { PageData } from './$types';
+	import { SortableContext, verticalListSortingStrategy } from '@dnd-kit-svelte/sortable';
+	import { crossfade } from 'svelte/transition';
 
 	let { data }: { data: PageData } = $props();
 	let board = $state(data.board);
@@ -31,7 +30,9 @@
 
 		const movedItem = board.sections[currentSectionIndex].tickets.splice(currentPosition, 1).pop()!;
 
-        console.log(`Moving ticket id=${movedItem.id} from [${currentSectionIndex},${currentPosition}] to [${newSectionIndex},${newPosition}]`);
+		console.log(
+			`Moving ticket id=${movedItem.id} from [${currentSectionIndex},${currentPosition}] to [${newSectionIndex},${newPosition}]`
+		);
 
 		board.sections[newSectionIndex].tickets.splice(newPosition, 0, movedItem);
 	}
@@ -55,39 +56,62 @@
 	}
 
 	let activeId: UniqueIdentifier | undefined = $state();
-	let activeTicket = $derived(findTicketInBoardById(activeId as number)?.ticket);
+	const activeTicket = $derived(findTicketInBoardById(activeId as number)?.ticket);
+	let targetSectionIndex: number | null = null;
+	let targetPosition: number | null = null;
 
 	function handleDragStart({ active }: DragStartEvent) {
 		activeId = active.id;
+		targetSectionIndex = null;
+		targetPosition = null;
 	}
 
 	function handleDragEnd({ over }: DragEndEvent) {
-		activeId = undefined;
-	}
-
-	function handleDragOver({ over, active }: DragOverEvent) {
 		if (over == null || activeId == null) {
+			activeId = undefined;
 			return;
 		}
 
-		const activeTicketInfo = findTicketInBoardById(active.id as number)!;
-
-		if (over.id.toString().startsWith('section-')) {
-			const sectionIndex = board.sections.findIndex(
-				(s) => s.id == parseInt((over.id as string).substring(8))
-			);
-
-			arrayMove2d(activeTicketInfo.sectionIndex, activeTicketInfo.ticketIndex, sectionIndex);
-		} else {
-			const overTicketInfo = findTicketInBoardById(over.id as number)!;
-
+		const activeTicketInfo = findTicketInBoardById(activeId as number)!;
+		if (targetSectionIndex !== null && targetSectionIndex === activeTicketInfo.sectionIndex) {
 			arrayMove2d(
 				activeTicketInfo.sectionIndex,
 				activeTicketInfo.ticketIndex,
-				overTicketInfo.sectionIndex,
-				overTicketInfo.ticketIndex
+				targetSectionIndex,
+				targetPosition ?? undefined
 			);
 		}
+
+		activeId = undefined;
+		targetSectionIndex = null;
+		targetPosition = null;
+	}
+
+	function handleDragOver({ over, active }: DragOverEvent) {
+		if (over == null || activeId == null) return;
+
+		const activeTicketInfo = findTicketInBoardById(activeId as number)!;
+		const isSection = over.id.toString().startsWith('section-');
+		const newSectionIndex = isSection
+			? board.sections.findIndex((s) => s.id == parseInt((over.id as string).substring(8)))
+			: findTicketInBoardById(over.id as number)!.sectionIndex;
+
+		const newPosition = isSection
+			? undefined
+			: findTicketInBoardById(over.id as number)!.ticketIndex;
+
+		// Move immediately if changing sections
+		if (newSectionIndex !== activeTicketInfo.sectionIndex) {
+			arrayMove2d(
+				activeTicketInfo.sectionIndex,
+				activeTicketInfo.ticketIndex,
+				newSectionIndex,
+				newPosition
+			);
+		}
+
+		targetSectionIndex = newSectionIndex;
+		targetPosition = newPosition ?? null;
 	}
 
 	const dropAnimation: DropAnimation = {
@@ -106,15 +130,10 @@
 		{data.board.title}
 	</span>
 
-	<DndContext
-		onDragStart={handleDragStart}
-		onDragEnd={handleDragEnd}
-		onDragOver={handleDragOver}
-		collisionDetection={closestCorners}
-	>
+	<DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOver}>
 		<div class="flex flex-row space-x-2 overflow-x-scroll rounded border p-2 shadow-lg">
 			{#each board.sections as section (section.id)}
-				<SortableContext items={section.tickets} strategy={verticalListSortingStrategy}>
+				<SortableContext items={section.tickets}>
 					<Droppable id={`section-${section.id}`}>
 						<div
 							class="bg-base-200 flex h-full min-h-64 w-72 shrink-0 flex-col items-stretch gap-2 rounded border p-2 shadow"
@@ -124,9 +143,9 @@
 							</span>
 							<div class="flex h-full grow flex-col gap-2">
 								{#each section.tickets as ticket (ticket.id)}
-									<!-- <div in:receive={{ key: ticket.id }} out:send={{ key: ticket.id }}> -->
-									<div>
-										<Sortable id={ticket.id} {ticket}></Sortable>
+									<div in:receive={{ key: ticket.id }} out:send={{ key: ticket.id }}>
+										<!-- <div> -->
+										<Sortable id={ticket.id} {ticket} />
 									</div>
 								{/each}
 							</div>

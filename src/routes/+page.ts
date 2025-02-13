@@ -17,6 +17,7 @@ export const load: PageLoad = async () => {
             {
               id: 2,
               title: 'Task 2',
+              height: 40
             },
             {
               id: 3,
